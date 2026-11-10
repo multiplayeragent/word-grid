@@ -1,0 +1,22 @@
+{
+  "name": "Word Grid",
+  "genre": "word",
+  "dim": "2D",
+  "mode": "Versus",
+  "players": "2–8",
+  "hook": "One grid of letters. Two minutes. Find more words.",
+  "how": "Everyone gets the same grid of letters. Drag across touching letters to make words of 3 or more: longer words score more, but a word someone else found too scores only half at the end.",
+  "controls": "Drag across the letters with the mouse or a finger; on a keyboard you can also type a word and press Enter",
+  "uses": [
+    ["Host-run rounds", "One player's browser deals the grid, runs the clock and adds up the scores; if it leaves, the next player takes over."],
+    ["Leaderboard", "Each player's best round score."],
+    ["Bots", "Bot players hunt for words alongside you until enough people join."],
+    ["Live sync", "Everyone's word count and points climb on every screen as they play."],
+    ["Live ops", "Change the grid size (4×4 or 5×5) or the round length for every room without touching code."]
+  ],
+  "ideas": [
+    "Make it a 5×5 grid with a 3-minute round",
+    "Add a bonus tile that doubles the word it's in",
+    "Show a fireworks burst when someone finds a 7-letter word"
+  ]
+}

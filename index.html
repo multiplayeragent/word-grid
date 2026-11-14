@@ -48,6 +48,7 @@
   .card li { padding: 2px 0; } .card li span { float: right; font-variant-numeric: tabular-nums; font-weight: 800; }
   .card li small { display: block; color: var(--dim); font-size: 12px; }
   .card li.me { color: var(--gold); }
+  .card li.msg { list-style: none; margin-left: -24px; color: var(--dim); } /* a status line, not a numbered entry */
   .card .chips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-start; }
   .card p { margin: 10px 0 0; font-size: 13px; opacity: .8; }
   button.go { width: 100%; min-height: 48px; margin-top: 14px; border: 0; border-radius: 12px; background: var(--good); color: #08261a; font: 800 17px system-ui, sans-serif; cursor: pointer; }
@@ -78,13 +79,14 @@
   <h2 id="winner"></h2><div class="sub" id="winSub"></div><ol id="results"></ol>
   <h3>Your words</h3><div class="chips" id="mine"></div>
   <h3>Nobody found</h3><div class="chips" id="missed"></div>
-  <h3>Best rounds</h3><ol id="board"><li>Loading…</li></ol>
+  <h3>Best rounds</h3><ol id="board"><li class="msg">Loading…</li></ol>
   <button class="go" id="again">Play again</button><p id="next"></p>
 </div></div>
 <script>
 /* ═══ WORD LIST (used by the main script below) ═════════════════════════════════════════
  * Every word the game accepts, lowercase, 3+ letters, grouped by length. Plurals don't need
- * listing: isWord() also takes a listed word + "s" / "es" / "ies". Add or remove words freely.
+ * listing: isWord() also takes a listed word + "s" / "es" / "ies", unless the word is in NO_S below.
+ * Irregular plurals (wolves, geese) are listed at the end. Add or remove words freely.
  */
 const WORDS = `
 ace act add ado aft age ago aid aim air ale all amp and ant any ape apt arc are ark arm art ash ask asp ate awe
@@ -353,6 +355,53 @@ snowball snowfall software solution somebody somewhat southern specific spelling
 starfish stranger strength stunning sunlight sunshine surprise survival swimming symphony teaspoon teenager
 terrible thinking thousand together tomorrow tortoise tracking treasure triangle tropical umbrella universe
 vacation valuable velocity vineyard volcanic weakness whatever whenever wildlife woodland workshop yourself
+calves echoes elves geese halves heroes knives oxen potatoes quizzes shelves thieves tomatoes vetoes wives wolves women
+`.trim().split(/\s+/);
+/* Listed words that never take an -s / -es / -ies ("thes", "knews", "happies", "childs" are not words).
+ * Add a word here if players get points for a made-up plural of it. */
+const NO_S = `
+aft ago and any apt are ate bad big but coy did elf far few for fun got had has her hey him his hot how icy
+ire its kin led lit mad men met mid nor not now oft old our per ran raw sad sat she sly the thy too via was
+who why won yet yin you yum zen
+able aged airy ajar akin alas alms also amid anew arid ashy atop avid away awed awry axis bade bald been bled
+blew bold born both boxy bred calf came clad cute daft dark data dead deaf deer deft died dire done dour drew
+dual duly dumb dyed each easy echo edgy else ever eyed feet fled flew fond foxy from full gave glad glib glum
+goes gone gosh grew grim half hard hazy held here hero holy hued huge hung idly info inky into just kept knew
+lacy laid lain late lazy lent less lest lice lied life lone lost loud made many meek mice mild most much neat
+next nice none nope nosy oily once only onto owed paid pled poky poor posh prim puny pure quiz racy rang rare
+rife ripe rode rosy rude rued rues said same sane sang sank sawn seen self sent sewn sick slid soft sold some
+soon sown sped spry spun such suds sued sung sunk sure swam swum taut than that thee them then they this thou
+thus tied tiny told took tore torn trod ugly undo unto upon used vain vast very veto vile wary wavy waxy weak
+went wept were what when whiz whoa whom wide wife wily wiry wise with woke wore worn wove your zany
+aback about above after again agile aglow ahead alike alive aloft alone along among ample angry apart ashen
+aware awful badly baggy beefy below bland bleak blown bossy brisk broke built bulky burly cheap child civic
+civil could crazy crude cubic curly dealt dense dimly dizzy drank drawn droll dusty eager early eaten eerie
+elfin every false fiery flaky flung foamy foggy forth fresh froze fully fuzzy gaudy giddy goofy grimy grown
+gruff gusty hairy handy happy hardy harsh hasty hotly humid inept inert irate itchy jazzy juicy jumpy knelt
+known kudos large later leafy leapt least lofty loyal lucid lucky lumpy lunar merry messy midst moist moldy
+moose mossy murky mushy music musty naive nasty naval nerdy never newer nifty nutty oddly often ought outer
+overt perky pesky petty picky polar prone proud quasi quick quite rainy rigid risen risky rocky roomy rowdy
+rural rusty sadly salty sandy saner savvy scant scary seedy shady sheep shelf shiny shone shown showy silky
+silly since sleek slept solar sonic sorry spent spicy stark stood stuck stung stunk suave sulky sunny swept
+tardy tares tasty tawny teeth tepid terse there thick thief those threw tidal timid today tooth trite truly
+tubby twice ultra under until urban usual vague valid viral vital vivid wacky weird where which whose windy
+wispy woken woman women woody wordy worse worst would woven wrote young yummy
+across actual advice afraid almost always anyone anyway arctic around asleep astern barely beaten became
+before behind beyond bitten bought bright broken caught chosen direst driest easily enough entire except
+fairly famous fourth frozen fruity gentle global golden gotten hidden highly honest indoor kindly latent
+latter learnt linear little lonely lovely mental merely mostly mutual myself nearby nearly normal oxygen
+potato quaint quirky rather really rotten scarce series silent simple sitars slowly spoken steals stolen
+strict strong subtle sudden surely tidier tinier tomato toward unique unless upward useful widely within
+wooden
+against already ancient another anybody awkward because beneath between calcium central certain clothes
+coastal digital eastern elegant exactly finally genuine healthy helpful herself himself however instead
+largely logical massive natural neither nowhere oatmeal obvious organic perhaps popular poverty privacy
+quickly several shortly similar someone strange supreme tearful tonight typical unusual virtual visible
+wealthy without written
+absolute accurate actually adorable although aluminum anywhere apparent athletic careless casually children
+colorful delicate electric familiar generous glorious graceful grateful handsome hardware historic homework
+humorous magnetic northern nowadays numerous ordinary outdoors peaceful pleasant powerful precious probably
+scissors software somewhat southern terrible together tropical volcanic whatever whenever wildlife yourself
 `.trim().split(/\s+/);
 </script>
 <script>
@@ -480,14 +529,14 @@ function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t 
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; }
 // The letter bag: common letters many times, rare ones once. "Q" is dealt as a "Qu" tile.
 const BAG = "EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOOTTTTTTTTTNNNNNNNSSSSSSSSRRRRRRRLLLLLDDDDUUUUCCCHHHMMMPPPGGGBBFFYYWWKVXJQZ";
-const DICT = new Set(WORDS);
+const DICT = new Set(WORDS), NO_PLURAL = new Set(NO_S);
 const pointsFor = (len) => CONFIG.points[Math.min(len, CONFIG.points.length - 1)];
 const tileText = (ch) => (ch === "Q" ? "qu" : ch.toLowerCase());
-/** A listed word, or a listed word + s / es / ies (cats, boxes, berries). */
+/** A listed word, or a listed word + s / es / ies (cats, boxes, berries), unless the word is in NO_S. */
 function isWord(w) {
   if (w.length < CONFIG.minLen) return false;
   if (DICT.has(w)) return true;
-  const plain = (b) => DICT.has(b) && !(b.length > 4 && /(ed|ing)$/.test(b));
+  const plain = (b) => DICT.has(b) && !NO_PLURAL.has(b) && !(b.length > 4 && /(ed|ing)$/.test(b));
   if (w.endsWith("ies") && plain(w.slice(0, -3) + "y")) return true;
   if (w.endsWith("es") && /(s|x|z|ch|sh)$/.test(w.slice(0, -2)) && plain(w.slice(0, -2))) return true;
   return w.endsWith("s") && !/(s|x|z|ch|sh|y)$/.test(w.slice(0, -1)) && plain(w.slice(0, -1)) || (w.endsWith("ys") && plain(w.slice(0, -1)) && /[aeiou]ys$/.test(w));
@@ -895,13 +944,13 @@ function showResults(r) {
   $("mine").innerHTML = mine.length ? mine.slice().sort((a, b) => b.length - a.length).map((w) => `<span class="chip${sh.has(w) ? " sh" : ""}" title="${sh.has(w) ? "someone found it too" : ""}">${esc(w.toUpperCase())}<b>${sh.has(w) ? Math.ceil(pointsFor(w.length) * CONFIG.sharedShare) : pointsFor(w.length)}</b></span>`).join("") : `<span class="chip sh">none this time</span>`;
   $("missed").innerHTML = (r.miss || []).map((w) => `<span class="chip">${esc(w.toUpperCase())}<b>${pointsFor(w.length)}</b></span>`).join("") || `<span class="chip sh">you found them all!</span>`;
   const list = $("board");
-  if (!board) { list.innerHTML = "<li>Leaderboards need a connection.</li>"; return; }
-  list.innerHTML = "<li>Loading…</li>";
+  if (!board) { list.innerHTML = '<li class="msg">Leaderboards need a connection.</li>'; return; }
+  list.innerHTML = '<li class="msg">Loading…</li>';
   const row = res.find((x) => x[0] === net.sessionId), score = row && me.submitted !== r.id ? row[3] : 0;
   me.submitted = r.id;
   (score ? board.submit(score).catch(() => null) : Promise.resolve()).then(() => board.top(10)).then(({ entries }) => {
-    list.innerHTML = entries.length ? entries.map((e) => `<li>${esc(e.username || "Player")}<span>${Number(e.score)}</span></li>`).join("") : "<li>No scores yet. Set the first.</li>";
-  }).catch(() => { list.innerHTML = "<li>Couldn't load the leaderboard.</li>"; });
+    list.innerHTML = entries.length ? entries.map((e) => `<li>${esc(e.username || "Player")}<span>${Number(e.score)}</span></li>`).join("") : '<li class="msg">No scores yet. Set the first.</li>';
+  }).catch(() => { list.innerHTML = `<li class="msg">Couldn't load the leaderboard.</li>`; });
 }
 let toastTimer = 0;
 function toast(text) { $("toast").textContent = text; $("toast").style.opacity = 1; clearTimeout(toastTimer); toastTimer = setTimeout(() => ($("toast").style.opacity = 0), 2200); }
@@ -968,6 +1017,7 @@ cv.addEventListener("pointermove", (e) => {
 function endDrag(e) { if (!drag || e.pointerId !== drag.id) return; drag = null; const path = me.path; me.path = []; submit(path); }
 cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
 cv.addEventListener("contextmenu", (e) => e.preventDefault());
+addEventListener("blur", () => { drag = null; me.path = []; me.typed = ""; }); // switched away mid-word: the release never comes, so drop the word
 // Typing (desktop): letters light up a path on the grid, Enter checks it, Backspace and Esc fix it.
 addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
